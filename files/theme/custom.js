@@ -1,199 +1,107 @@
+/**
+ * 1.1 version of theme custom js
+ * Support for Navpane plugin
+ */
+
 jQuery(function($) {
-  $(document).ready(function() {
 
-    // General styling
-    $("body").addClass("postload").addClass("wsite-theme-light").removeClass("wsite-theme-dark");
-
-    $('.hamburger').click(function(){
-      $("body").toggleClass("menu-open");
-    });
-
-    $('.wsite-search-filter > h3').click(function(){
-      $("#wsite-search-sidebar").toggleClass("menu-open");
-    });
-    
-    // Product Element
-    // --------------------------------------------------------------------------------------
-
-    // Swap preview images for hi-res images in product elements
-
-    $("a.wsite-product-image").each(function(){
-      var hires = $(this).attr("href");
-      $(this).find('img').attr("src", hires);
-    });
-
-    // Format Product Element
-
-    function product() {
-        $(".wsite-product").each(function() {
-          if ($(this).children(".wsite-product-image-wrap").outerHeight() <= $(this).children(".wsite-product-right").outerHeight()) {
-            if ($(this).parents('.wsite-multicol-tr').length) {
-              $('.wsite-multicol-tr').find(".wsite-product").addClass('break');
-            }
-            else {
-              $(this).addClass('break');
-            }
-          }
-        });
-    }
-
-    product();
-
-    var timeout;
-
-    $(window).on('resize', function(e) {
-
-      clearTimeout(timeout);
-      timeout = setTimeout(function() {
-
-        product();
-
-      }, 300);
-
-    });
-
-    // End Product Element
-    // --------------------------------------------------------------------------------------
-
-    // STORE FRONT PAGE
-    // --------------------------------------------------------------------------------------
-
-    // Wrap category text in span for inline wrap effect (will show as block wrap in editor)
-
-    $("#wsite-com-store .wsite-com-category-subcategory-name-text").each(function(){
-        var category = $(this).text();
-        $(this).html('<span>'+category+'</span>');
-    });
-
-    $("body:not(.wsite-editor) #banner h2").each(function(){
-        var copy = $(this).html();
-        $(this).html('<span>'+copy+'</span>');
-    });
-
-    // Store category list click
-
-    $('.wsite-com-sidebar').click(function(){
-        if (!$(this).hasClass('sidebar-expanded')) {
-            $(this).addClass('sidebar-expanded');
-            if ($('#close').length === 0) {
-                $("#wsite-com-hierarchy").prepend('<a id="close" href="#">CLOSE</a>');
-                $('#close').click(function(e){
-                    e.preventDefault();
-                    setTimeout(function() {$('.wsite-com-sidebar').removeClass('sidebar-expanded');}, 50);
-                });
-            }
-        }
-    });
-
-
-    // Add fullwidth class to gallery thumbs if less than 6
-
-    $('.imageGallery').each(function(){
-      if ($(this).children('div').length <= 6) {
-        $(this).children('div').addClass('halfwidth-mobile');
-      }
-    });
-
-    // Add swipe to fancybox mobile
-
-      var swipeGallery = function(){
-        setTimeout(function(){
+  // Define Theme specific functions
+  var Theme = {
+    // Swiping mobile galleries wwith Hammer.js
+    swipeGallery: function() {
+      setTimeout(function() {
         var touchGallery = document.getElementsByClassName("fancybox-wrap")[0];
         var mc = new Hammer(touchGallery);
         mc.on("panleft panright", function(ev) {
           if (ev.type == "panleft") {
             $("a.fancybox-next").trigger("click");
-          }
-          else if (ev.type == "panright") {
+          } else if (ev.type == "panright") {
             $("a.fancybox-prev").trigger("click");
           }
-          swipeGallery();
+          Theme.swipeGallery();
         });
-        }, 500);
-      }
+      }, 500);
+    },
+    swipeInit: function() {
       if ('ontouchstart' in window) {
-        $("body").on( "click", "a.w-fancybox", function() {
-          swipeGallery();
-        });
-    	}
-
-
-    // Format Store markup
-
-    $('#wsite-com-product-quantity .wsite-com-product-title').text('Qty');
-
-    $('#wsite-com-product-add-to-cart, .wsite-product-button').removeClass("wsite-button-highlight");
-
-    $("#wsite-com-product-images-strip a:first-child").addClass("current-thumb");
-
-    $("#wsite-com-product-images-strip a").click(function(){
-        $(".current-thumb").removeClass("current-thumb");
-        $(this).addClass("current-thumb");
-    });
-
-    // Cart + Member
-
-    $('#nav').on('DOMSubtreeModified propertychange', function() {
-
-      if ($(window).width() < 992) {
-        $("#nav li a").each(function(){
-          // Differentiating post-load nav elements by the presence of an id (only currently available modifier)
-          if ($(this).attr("id")) {
-            var navLinkId = $(this).attr("id");
-            var navLinkParent = $(this).parent().detach();
-
-            // Append to mobile nav if new element
-            if (!$("#navmobile #"+navLinkId).length) {
-              $("#navmobile .wsite-menu-default").append(navLinkParent);
-              var newheight = $("#navmobile .wsite-menu-default").height();
-              $(".wsite-mobile-menu").height(newheight);
-            }
-          }
+        $("body").on("click", "a.w-fancybox", function() {
+          Theme.swipeGallery();
         });
       }
-
-    });
-
-    function cartDisplay() {
-      if (Number($('#wsite-nav-cart-num').text()) > 0 ) {
-        $('#wsite-mini-cart').addClass('full');
+    },
+    // Hide minicart better on mobile
+    hideCart: function(){
+      if ('ontouchstart' in window) {
+        $('.wsite-background, #banner, #main, #footer').on('click', function () {
+            $('#wsite-mini-cart').fadeOut("fast");
+        });
       }
-      else {
-          $('#wsite-mini-cart').removeClass('full');
-      }
+    },
+    toggleClick: function(click, target, classname){
+      $(click).click(function(){
+        $(target).toggleClass(classname);
+      });
+    },
+    interval: function(condition, action, duration, limit) {
+      var counter = 0;
+      var looper = setInterval(function(){
+        if (counter >= limit || condition()) {
+          clearInterval(looper);
+        } else {
+          action();
+          counter++;
+        }
+      }, duration);
+    },
+    checkCart: function() {
+      return $("#weebly-footer-signup-container").length;
+    },
+    checkFreeFooter: function() {
+      return $("#panel-one #wsite-mini-cart").css("display") === "block";
+    },
+    unbindFreeFooter: function() {
+      $(window).unbind("scroll");
+    },
+    moveMinicart: function() {
+      var cart = $('#wsite-mini-cart').detach();
+      $(".wsite-nav-cart").after(cart);
+      $('#wsite-mini-cart').removeClass("arrow-left").addClass("arrow-top");
+      Weebly.Menus = false;
+    },
+    checkLogin: function() {
+      return $("#nav #member-login").length;
+    },
+    cloneLogin: function() {
+      var login = $('#member-login').clone(true);
+      $("#nav .wsite-menu-default li:last-child").after(login);
+    },
+    topButton: function(container, offset) {
+      $(container).append('<a class="scrolltop" href="#">^ TOP</a>');
+      $(".scrolltop").click(function(e){
+        e.preventDefault();
+        $("html, body").animate({ scrollTop: 0 }, 900);
+      })
+    },
+    footerCheck: function(){
+      setTimeout(function() {
+        var contentHeight = $("#banner").height() + $("#main").height();
+        if (contentHeight >  $("#panel-two").height()) {
+          $("#footer > div:not(.wsite-footer)").addClass("auto");
+        }
+      }, 500);
     }
+  }
 
-    setTimeout(function() { cartDisplay(); }, 1400);
-
-    $('.wsite-product-button, #wsite-com-product-add-to-cart, .wsite-product-item .wsite-remove-button').on('click', function(){
-      setTimeout(function() { cartDisplay(); }, 800);
-    });
-
-    // BLOG
-    // --------------------------------------------------------------------------------------
-    // --------------------------------------------------------------------------------------
-
-    // Blog styling
-
-    $("#commentReplyTitle").text("Leave a comment");
-
-    $(".blogCommentLevel0").each(function(){
-        if ($(this).parent().prev("h2").text() == "Comments") {
-            $(this).addClass("first");
-        }
-    });
-
-    $(".blogCommentLevel1").each(function(){
-        if ($(this).parent().prev("div").children("div").hasClass("blogCommentLevel0")) {
-            $(this).addClass("first");
-        }
-    });
-
-    $(".blogCommentLevel2").each(function(){
-        if ($(this).parent().prev("div").children("div").hasClass("blogCommentLevel1")) {
-            $(this).addClass("first");
-        }
-    });
-
+  $(document).ready(function() {
+    $('body').addClass('postload');
+    Theme.toggleClick(".wsite-com-sidebar", ".wsite-com-sidebar", "open");
+    Theme.topButton("#footer > div", 100);
+    Theme.swipeInit();
+    Theme.hideCart();
+    Theme.interval(Theme.checkCart, Theme.moveMinicart, 500, 8);
+    Theme.interval(Theme.checkLogin, Theme.cloneLogin, 500, 8);
+    Theme.footerCheck();
+    Theme.interval(Theme.checkFreeFooter, Theme.unbindFreeFooter, 500, 8);
   });
+
 });
